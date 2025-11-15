@@ -205,4 +205,4 @@ Actual FPS will depend on:
 - YuNet model & demos (OpenCV Zoo):
   [https://github.com/opencv/opencv_zoo/tree/main/models/face_detection_yunet](https://github.com/opencv/opencv_zoo/tree/main/models/face_detection_yunet)
 - Original training code (libfacedetection / YuNet training):
-  [https://github.com/ShiqiYu/libfacedetection.train](https://github.com/ShiqiYu/libfacedetection.train)
+  [https://github.com/ShiqiYu/libfacedetection](https://github.com/ShiqiYu/libfacedetection)

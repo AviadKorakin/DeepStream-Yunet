@@ -12,10 +12,14 @@ This project is a **minimal YuNet-based face detector** built on **NVIDIA DeepSt
 ## Features
 
 - DeepStream 7.x style pipeline using:
+
   - `uridecodebin` → `nvstreammux` → `nvinfer` (YuNet) → `nvdsosd` → encoder → MP4.
+
 - YuNet face detection with:
+
   - Bounding boxes.
   - 5 facial keypoints (per face).
+
 - Supports **file URIs** (`file:///…`) and can be extended to RTSP/HTTP easily.
 - Works on **Jetson** (Orin Nano, Xavier, etc.) and **x86 with NVIDIA GPU**.
 
@@ -23,17 +27,21 @@ This project is a **minimal YuNet-based face detector** built on **NVIDIA DeepSt
 
 ## Requirements
 
-- NVIDIA **Jetson** with JetPack + DeepStream installed  
+- NVIDIA **Jetson** with JetPack + DeepStream installed
   or x86 machine with:
+
   - NVIDIA GPU + drivers
   - CUDA
   - DeepStream SDK
+
 - Python 3
 - DeepStream Python bindings (`pyds`) available, usually via:
-```bash
-  /opt/nvidia/deepstream/deepstream/lib
-```
 
+  ```bash
+  /opt/nvidia/deepstream/deepstream/lib
+  ```
+
+---
 
 ## Setup
 
@@ -45,10 +53,10 @@ Before running the example, run the setup script once:
 
 Typical things `setup.sh` would handle (depending on how you implemented it):
 
-* Creating/activating a Python venv.
-* Installing required Python packages (e.g. `gi`, `numpy`).
-* Exporting `PYTHONPATH` or `LD_LIBRARY_PATH` so that `pyds` and GStreamer plugins are found.
-* Any DeepStream / YuNet engine build steps you need.
+- Creating/activating a Python venv.
+- Installing required Python packages (e.g. `gi`, `numpy`).
+- Exporting `PYTHONPATH` or `LD_LIBRARY_PATH` so that `pyds` and GStreamer plugins are found.
+- Any DeepStream / YuNet engine build steps you need.
 
 > **Note:** Adjust `setup.sh` to your environment (Jetson vs PC, DeepStream version, etc.).
 
@@ -64,9 +72,9 @@ You need a YuNet `nvinfer` config file, for example:
 
 This config should:
 
-* Point to your YuNet TensorRT engine or ONNX model.
-* Set the correct network input size (e.g. 640×640).
-* Enable tensor output if you’re using a custom parser or Python tensor decode:
+- Point to your YuNet TensorRT engine or ONNX model.
+- Set the correct network input size (e.g. 640×640).
+- Enable tensor output if you’re using a custom parser or Python tensor decode:
 
   ```ini
   [property]
@@ -95,26 +103,26 @@ python3 deepstream_yunet.py \
 
 ### Arguments Explained
 
-* `-s / --source`
+- `-s / --source`
   URI of the input video. For local files, use `file:///absolute/path/to/video.mp4`.
 
-* `-c / --infer-config`
+- `-c / --infer-config`
   Path to the `nvinfer` config file for YuNet.
 
-* `--out`
+- `--out`
   Output MP4 path for the encoded result (with drawn face boxes + keypoints).
 
-* `--streammux-width`, `--streammux-height`
+- `--streammux-width`, `--streammux-height`
   Output resolution of `nvstreammux`. In the example: **640×640**
   (this is also a good match for YuNet input size).
 
-* `--streammux-batch-size`
+- `--streammux-batch-size`
   Batch size for `nvstreammux`. For a single source, keep it at `1`.
 
-* `--bitrate`
+- `--bitrate`
   Encoder target bitrate (here: `6,000,000` ≈ 6 Mbps).
 
-* `--gop`
+- `--gop`
   GOP / keyframe interval. `30` means one I-frame every 30 frames.
 
 ---
@@ -123,16 +131,16 @@ python3 deepstream_yunet.py \
 
 On **Jetson Orin Nano** (properly configured, max clocks, DeepStream installed) this pipeline has been observed to reach:
 
-* ~**72 FPS** at 640×640,
-* YuNet + 5 keypoints per face,
-* writing MP4 to disk.
+- ~**72 FPS** at 640×640,
+- YuNet + 5 keypoints per face,
+- writing MP4 to disk.
 
 Actual FPS will depend on:
 
-* Input resolution and frame rate.
-* Number of faces per frame.
-* GPU / power mode / `jetson_clocks` state.
-* Whether you enable extra logging, tensor printing, etc.
+- Input resolution and frame rate.
+- Number of faces per frame.
+- GPU / power mode / `jetson_clocks` state.
+- Whether you enable extra logging, tensor printing, etc.
 
 ---
 
@@ -152,7 +160,7 @@ Actual FPS will depend on:
    python3 deepstream_yunet.py \
      -s file:///home/swish/yunet/example.mp4 \
      -c /home/swish/yunet/yunet_nvinfer_config.txt \
-     --out _debug/yunet_ds_out.mp4 \
+     --out out/yunet_ds_out.mp4 \
      --streammux-width 640 \
      --streammux-height 640 \
      --streammux-batch-size 1 \
@@ -161,3 +169,12 @@ Actual FPS will depend on:
    ```
 
 4. Inspect `out/yunet_ds_out.mp4` to see YuNet detections + 5 keypoints drawn at high FPS.
+
+---
+
+## References
+
+- YuNet model & demos (OpenCV Zoo):
+  [https://github.com/opencv/opencv_zoo/tree/main/models/face_detection_yunet](https://github.com/opencv/opencv_zoo/tree/main/models/face_detection_yunet)
+- Original training code (libfacedetection / YuNet training):
+  [https://github.com/ShiqiYu/libfacedetection.train](https://github.com/ShiqiYu/libfacedetection.train)

@@ -27,7 +27,7 @@ This project is a **minimal YuNet-based face detector** built on **NVIDIA DeepSt
 
 ## Requirements
 
-- NVIDIA **Jetson** with JetPack + DeepStream installed
+- NVIDIA **Jetson** with JetPack + DeepStream installed  
   or x86 machine with:
 
   - NVIDIA GPU + drivers
@@ -40,6 +40,8 @@ This project is a **minimal YuNet-based face detector** built on **NVIDIA DeepSt
   ```bash
   /opt/nvidia/deepstream/deepstream/lib
   ```
+
+````
 
 ---
 
@@ -127,6 +129,30 @@ python3 deepstream_yunet.py \
 
 ---
 
+## Demo Video Output
+
+After a successful run, the DeepStream + YuNet pipeline writes the annotated video to:
+
+```text
+out/yunet_ds_out.mp4
+```
+
+Open this file in your favorite video player (e.g. `vlc`, `mpv`, or a browser player) to see:
+
+- YuNet face bounding boxes.
+- 5 keypoints per face (eyes, nose, mouth corners).
+- Real-time FPS overlay in the logs (see console output).
+
+Example:
+
+```bash
+vlc out/yunet_ds_out.mp4
+# or
+mpv out/yunet_ds_out.mp4
+```
+
+---
+
 ## Expected Performance
 
 On **Jetson Orin Nano** (properly configured, max clocks, DeepStream installed) this pipeline has been observed to reach:
@@ -178,3 +204,4 @@ Actual FPS will depend on:
   [https://github.com/opencv/opencv_zoo/tree/main/models/face_detection_yunet](https://github.com/opencv/opencv_zoo/tree/main/models/face_detection_yunet)
 - Original training code (libfacedetection / YuNet training):
   [https://github.com/ShiqiYu/libfacedetection.train](https://github.com/ShiqiYu/libfacedetection.train)
+````

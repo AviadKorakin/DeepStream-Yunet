@@ -137,12 +137,10 @@ After a successful run, the DeepStream + YuNet pipeline writes the annotated vid
 
 If your README is viewed in an environment that allows HTML (e.g. many Git hosting UIs, static docs sites), you can embed the video directly:
 
-```html
 <video controls width="640">
   <source src="out/yunet_ds_out.mp4" type="video/mp4" />
   Your browser does not support the video tag.
 </video>
-```
 
 This will show:
 

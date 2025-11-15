@@ -37,11 +37,9 @@ This project is a **minimal YuNet-based face detector** built on **NVIDIA DeepSt
 - Python 3
 - DeepStream Python bindings (`pyds`) available, usually via:
 
-  ```bash
+```bash
   /opt/nvidia/deepstream/deepstream/lib
-  ```
-
-````
+```
 
 ---
 
@@ -69,7 +67,7 @@ Typical things `setup.sh` would handle (depending on how you implemented it):
 You need a YuNet `nvinfer` config file, for example:
 
 ```text
-/home/swish/yunet/yunet_nvinfer_config.txt
+  /home/swish/yunet/yunet_nvinfer_config.txt
 ```
 
 This config should:
@@ -78,10 +76,10 @@ This config should:
 - Set the correct network input size (e.g. 640×640).
 - Enable tensor output if you’re using a custom parser or Python tensor decode:
 
-  ```ini
+```ini
   [property]
   output-tensor-meta=1
-  ```
+```
 
 (Refer to your DeepStream docs / existing config for full details.)
 
@@ -134,7 +132,7 @@ python3 deepstream_yunet.py \
 After a successful run, the DeepStream + YuNet pipeline writes the annotated video to:
 
 ```text
-out/yunet_ds_out.mp4
+  out/yunet_ds_out.mp4
 ```
 
 Open this file in your favorite video player (e.g. `vlc`, `mpv`, or a browser player) to see:
@@ -176,13 +174,13 @@ Actual FPS will depend on:
 
 2. Run:
 
-   ```bash
+```bash
    ./setup.sh
-   ```
+```
 
 3. Run the example:
 
-   ```bash
+```bash
    python3 deepstream_yunet.py \
      -s file:///home/swish/yunet/example.mp4 \
      -c /home/swish/yunet/yunet_nvinfer_config.txt \
@@ -192,11 +190,9 @@ Actual FPS will depend on:
      --streammux-batch-size 1 \
      --bitrate 6000000 \
      --gop 30
-   ```
+```
 
 4. Inspect `out/yunet_ds_out.mp4` to see YuNet detections + 5 keypoints drawn at high FPS.
-
----
 
 ## References
 
@@ -204,4 +200,3 @@ Actual FPS will depend on:
   [https://github.com/opencv/opencv_zoo/tree/main/models/face_detection_yunet](https://github.com/opencv/opencv_zoo/tree/main/models/face_detection_yunet)
 - Original training code (libfacedetection / YuNet training):
   [https://github.com/ShiqiYu/libfacedetection.train](https://github.com/ShiqiYu/libfacedetection.train)
-````

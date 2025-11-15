@@ -1,0 +1,39 @@
+[property]
+# Which GPU device to run this nvinfer instance on (0 = first GPU)
+gpu-id=0
+
+# Path to the YuNet ONNX model file
+onnx-file=./face_detection_yunet_2023mar.onnx
+model-engine-file=./face_detection_yunet_2023mar.onnx_b1_gpu0_fp16.engine
+
+# Path where the TensorRT engine will be read from / saved to
+model-engine-file=./face_detection_yunet_2023mar.onnx_b1_gpu0_fp16.engine
+
+# Max batch size this engine is built for and will process per inference
+batch-size=1
+
+# TensorRT precision mode (0=FP32, 1=INT8, 2=FP16)
+network-mode=2
+
+# Network input dimensions in CHW order: C=3, H=640, W=640
+infer-dims=3;640;640
+
+# IMPORTANT:
+# Treat this as a generic "other" network. DeepStream will NOT try to parse
+# bboxes / coverage on its own. We decode everything from tensor meta in Python.
+network-type=100
+
+# YuNet expects raw 0–255 BGR
+net-scale-factor=1.0
+
+# Input color layout for the model (0=RGB, 1=BGR, 2=GRAY)
+model-color-format=1
+
+# Export raw TensorRT outputs as NvDsInferTensorMeta on the frame
+output-tensor-meta=1
+
+# Unique ID for this nvinfer instance in the DeepStream pipeline
+gie-unique-id=1
+
+# Names and order of the output bindings in the engine (YuNet heads)
+output-blob-names=cls_8;cls_16;cls_32;obj_8;obj_16;obj_32;bbox_8;bbox_16;bbox_32;kps_8;kps_16;kps_32

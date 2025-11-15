@@ -135,13 +135,22 @@ After a successful run, the DeepStream + YuNet pipeline writes the annotated vid
   out/yunet_ds_out.mp4
 ```
 
-Open this file in your favorite video player (e.g. `vlc`, `mpv`, or a browser player) to see:
+If your README is viewed in an environment that allows HTML (e.g. many Git hosting UIs, static docs sites), you can embed the video directly:
+
+```html
+<video controls width="640">
+  <source src="out/yunet_ds_out.mp4" type="video/mp4" />
+  Your browser does not support the video tag.
+</video>
+```
+
+This will show:
 
 - YuNet face bounding boxes.
 - 5 keypoints per face (eyes, nose, mouth corners).
-- Real-time FPS overlay in the logs (see console output).
+- The final DeepStream-annotated stream exactly as written by the pipeline.
 
-Example:
+You can still open the file directly in a player if you prefer:
 
 ```bash
 vlc out/yunet_ds_out.mp4
@@ -192,7 +201,7 @@ Actual FPS will depend on:
      --gop 30
 ```
 
-4. Inspect `out/yunet_ds_out.mp4` to see YuNet detections + 5 keypoints drawn at high FPS.
+4. Inspect or play `out/yunet_ds_out.mp4` (embedded `<video>` block above, or your local player) to see YuNet detections + 5 keypoints drawn at high FPS.
 
 ## References
 

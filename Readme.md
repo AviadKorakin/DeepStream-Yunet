@@ -163,7 +163,7 @@ mpv out/yunet_ds_out.mp4
 
 On **Jetson Orin Nano** (properly configured, max clocks, DeepStream installed) this pipeline has been observed to reach:
 
-- ~**72 FPS** at 640×640,
+- ~**120 FPS** at 640×640,
 - YuNet + 5 keypoints per face,
 - writing MP4 to disk.
 

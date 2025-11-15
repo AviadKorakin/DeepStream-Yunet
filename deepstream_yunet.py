@@ -352,7 +352,7 @@ def _nms_py(dets, nms_thr):
     return keep
 
 
-def decode_yunet_from_tensor_meta(tmeta, score_thr=0.7, nms_thr=0.3):
+def decode_yunet_from_tensor_meta(tmeta, score_thr=0.75, nms_thr=0.3):
     """
     Read YuNet heads from NvDsInferTensorMeta and produce final detections.
     Returns a list of dicts with bbox + 5 landmarks.
@@ -460,7 +460,7 @@ def pgie_src_tensor_probe(pad, info, _):
             continue
 
         # Decode YuNet heads into final detections
-        dets = decode_yunet_from_tensor_meta(tmeta, score_thr=0.7, nms_thr=0.3)
+        dets = decode_yunet_from_tensor_meta(tmeta, score_thr=0.75, nms_thr=0.3)
         if not dets:
             if NO_DRAW:
                 if frame_meta.frame_num % TENSOR_LOG_EVERY == 0:

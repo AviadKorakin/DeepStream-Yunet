@@ -81,8 +81,6 @@ This config should:
   output-tensor-meta=1
 ```
 
-(Refer to your DeepStream docs / existing config for full details.)
-
 ---
 
 ## Running the Example

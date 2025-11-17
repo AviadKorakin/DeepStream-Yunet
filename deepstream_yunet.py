@@ -201,10 +201,10 @@ def _reshape_known(arr, comp):
     return a.reshape(j, comp)
 
 
-# ───────── YuNet decode in Python (anchor-free) ─────────
+# ───────── YuNet decode in Python (anchor-free, NETWORK space) ─────────
 def _decode_yunet_stride_py(bbox, cls, obj, kps, stride, input_w, input_h, score_thr):
     """
-    Vectorized YuNet per-stride decode.
+    Vectorized YuNet per-stride decode in NETWORK INPUT space (input_w x input_h).
 
     bbox: (N,4)
     cls:  (N,1) or (N,)
@@ -254,7 +254,7 @@ def _decode_yunet_stride_py(bbox, cls, obj, kps, stride, input_w, input_h, score
     dw = bbox_kept[:, 2].astype(np.float32)
     dh = bbox_kept[:, 3].astype(np.float32)
 
-    # 3) decode centers + sizes (all at once)
+    # 3) decode centers + sizes (all at once) in NETWORK space
     stride_f = float(stride)
     cx = (c + dx) * stride_f
     cy = (r + dy) * stride_f
@@ -266,14 +266,13 @@ def _decode_yunet_stride_py(bbox, cls, obj, kps, stride, input_w, input_h, score
     x2 = cx + 0.5 * w
     y2 = cy + 0.5 * h
 
-    # 4) clamp to input size
+    # 4) clamp to input size (NETWORK space)
     x1 = np.clip(x1, 0.0, float(input_w - 1))
     y1 = np.clip(y1, 0.0, float(input_h - 1))
     x2 = np.clip(x2, 0.0, float(input_w - 1))
     y2 = np.clip(y2, 0.0, float(input_h - 1))
 
-    # 5) landmarks (vectorized per kpt index)
-    # kps_kept: (M,10) = [x0,y0,x1,y1,...]
+    # 5) landmarks (vectorized per kpt index, NETWORK space)
     kps_arr = kps_kept.astype(np.float32)
     lm_list = []
     for n in range(5):
@@ -285,8 +284,7 @@ def _decode_yunet_stride_py(bbox, cls, obj, kps, stride, input_w, input_h, score
         ly = np.clip(ly, 0.0, float(input_h - 1))
         lm_list.append((lx, ly))
 
-    # 6) pack into list-of-dicts (only for kept anchors)
-    #    This is now the only Python loop for this stride.
+    # 6) pack into list-of-dicts (still NETWORK space)
     M = scores_kept.shape[0]
     for i in range(M):
         lm = [(lm_list[n][0][i].item(), lm_list[n][1][i].item()) for n in range(5)]
@@ -309,6 +307,7 @@ def _decode_yunet_stride_py(bbox, cls, obj, kps, stride, input_w, input_h, score
 def _nms_py(dets, nms_thr):
     """
     Greedy NMS over list of dicts: {'bbox': (x1,y1,x2,y2), 'score': s, ...}
+    (Still in whatever coordinate system dets are in; we apply NMS in network space.)
     """
     if not dets:
         return []
@@ -355,7 +354,13 @@ def _nms_py(dets, nms_thr):
 def decode_yunet_from_tensor_meta(tmeta, score_thr=0.75, nms_thr=0.3):
     """
     Read YuNet heads from NvDsInferTensorMeta and produce final detections.
-    Returns a list of dicts with bbox + 5 landmarks.
+
+    Returns:
+        (final_dets, input_w, input_h)
+
+        final_dets: list of dicts with bbox + 5 landmarks, all in
+                    **NETWORK INPUT** coordinates (input_w x input_h).
+        input_w, input_h: network input dimensions (for scaling to mux/source space).
     """
     input_w = int(tmeta.network_info.width)
     input_h = int(tmeta.network_info.height)
@@ -392,7 +397,7 @@ def decode_yunet_from_tensor_meta(tmeta, score_thr=0.75, nms_thr=0.3):
         all_dets.extend(stride_dets)
 
     final_dets = _nms_py(all_dets, nms_thr)
-    return final_dets
+    return final_dets, input_w, input_h
 
 
 # ───────── Display meta helper ─────────
@@ -414,19 +419,15 @@ def pgie_src_tensor_probe(pad, info, _):
     """
     For each frame:
       - Find NvDsInferTensorMeta from PGIE (YuNet).
-      - Decode bbox + 5 keypoints per face (anchor-free).
-      - Run NMS.
+      - Decode bbox + 5 keypoints per face (anchor-free) in NETWORK space.
+      - Run NMS in NETWORK space.
+      - Scale NETWORK coords -> FRAME coords (streammux / source).
       - If NO_DRAW:
           * do NOT add display meta
           * print a compact summary of detections (throttled)
         Else:
           * draw GREEN rectangles for faces
-          * draw BIG GREEN circles for the 5 landmarks
-
-    Notes for DeepStream 7.1:
-      - NvOSD_CircleParams has: xc, yc, radius, circle_color,
-        has_bg_color, bg_color. There is NO line_width field.
-      - xc, yc, radius must be ints, so we cast explicitly.
+          * draw GREEN circles for the 5 landmarks
     """
     buf = info.get_buffer()
     if not buf:
@@ -459,40 +460,53 @@ def pgie_src_tensor_probe(pad, info, _):
             l_frame = l_frame.next
             continue
 
-        # Decode YuNet heads into final detections
-        dets = decode_yunet_from_tensor_meta(tmeta, score_thr=0.75, nms_thr=0.3)
+        # Decode YuNet heads into final detections (NETWORK space)
+        dets, in_w, in_h = decode_yunet_from_tensor_meta(
+            tmeta, score_thr=0.75, nms_thr=0.3
+        )
+
         if not dets:
-            if NO_DRAW:
-                if frame_meta.frame_num % TENSOR_LOG_EVERY == 0:
-                    print(
-                        f"[TENSOR] src={frame_meta.source_id} "
-                        f"frame={frame_meta.frame_num} dets=0"
-                    )
+            if NO_DRAW and frame_meta.frame_num % TENSOR_LOG_EVERY == 0:
+                print(
+                    f"[TENSOR] src={frame_meta.source_id} "
+                    f"frame={frame_meta.frame_num} dets=0"
+                )
             l_frame = l_frame.next
             continue
 
-        # If --no-draw: just log, don't attach any display meta
+        # FRAME (display/streammux) dimensions – this is what nvdsosd draws on
+        fw = float(frame_meta.source_frame_width)
+        fh = float(frame_meta.source_frame_height)
+
+        # Defensive: avoid div-by-zero if network_info is wrong
+        in_w = max(1.0, float(in_w))
+        in_h = max(1.0, float(in_h))
+
+        # Scale factors: network → frame
+        sx = fw / in_w
+        sy = fh / in_h
+
+        # If --no-draw: just log (scaled coords to be intuitive)
         if NO_DRAW:
-            # Throttle logging to avoid killing FPS
             if frame_meta.frame_num % TENSOR_LOG_EVERY == 0:
                 print(
                     f"[TENSOR] src={frame_meta.source_id} "
-                    f"frame={frame_meta.frame_num} dets={len(dets)}"
+                    f"frame={frame_meta.frame_num} dets={len(dets)} "
+                    f"(net={int(in_w)}x{int(in_h)} → frame={int(fw)}x{int(fh)})"
                 )
-                # Print first few detections with bbox + score
                 for i, d in enumerate(dets[:3]):
                     x1, y1, x2, y2 = d["bbox"]
+                    x1s, y1s = x1 * sx, y1 * sy
+                    x2s, y2s = x2 * sx, y2 * sy
                     print(
                         f"   det[{i}]: score={d['score']:.3f} "
-                        f"bbox=({x1:.1f},{y1:.1f},{x2:.1f},{y2:.1f})"
+                        f"net_bbox=({x1:.1f},{y1:.1f},{x2:.1f},{y2:.1f}) "
+                        f"frame_bbox=({x1s:.1f},{y1s:.1f},{x2s:.1f},{y2s:.1f})"
                     )
             l_frame = l_frame.next
             continue
 
-        # Drawing mode: attach rects + circles
-        fw = int(frame_meta.source_frame_width)
-        fh = int(frame_meta.source_frame_height)
-
+        # Drawing mode: attach rects + circles (FRAME space)
         dmeta = None
         max_rects = max_circles = 0
 
@@ -503,7 +517,6 @@ def pgie_src_tensor_probe(pad, info, _):
                 max_rects = len(dmeta.rect_params)
                 max_circles = len(dmeta.circle_params)
 
-            # Ensure there is room for a new rect
             if dmeta.num_rects >= max_rects:
                 dmeta = _acquire_display_meta(bmeta, frame_meta, dmeta)
                 max_rects = len(dmeta.rect_params)
@@ -511,11 +524,17 @@ def pgie_src_tensor_probe(pad, info, _):
 
             x1, y1, x2, y2 = det["bbox"]
 
-            # Clamp bbox to frame size (in case model input != frame size)
-            x1 = max(0.0, min(x1, fw - 1))
-            y1 = max(0.0, min(y1, fh - 1))
-            x2 = max(0.0, min(x2, fw - 1))
-            y2 = max(0.0, min(y2, fh - 1))
+            # Scale NETWORK → FRAME
+            x1 *= sx
+            y1 *= sy
+            x2 *= sx
+            y2 *= sy
+
+            # Clamp bbox to frame size
+            x1 = max(0.0, min(x1, fw - 1.0))
+            y1 = max(0.0, min(y1, fh - 1.0))
+            x2 = max(0.0, min(x2, fw - 1.0))
+            y2 = max(0.0, min(y2, fh - 1.0))
 
             rect = dmeta.rect_params[dmeta.num_rects]
             rect.left = int(round(x1))
@@ -527,21 +546,23 @@ def pgie_src_tensor_probe(pad, info, _):
             rect.border_color.set(0.0, 1.0, 0.0, 1.0)  # GREEN
             dmeta.num_rects += 1
 
-            # Draw 5 keypoints as big green circles
+            # Landmarks: NETWORK → FRAME
             for lx, ly in det["landmarks"]:
                 if dmeta.num_circles >= max_circles:
                     dmeta = _acquire_display_meta(bmeta, frame_meta, dmeta)
                     max_rects = len(dmeta.rect_params)
                     max_circles = len(dmeta.circle_params)
 
-                # Clamp kpt coords to frame, then cast to int
-                lx = max(0.0, min(lx, fw - 1))
-                ly = max(0.0, min(ly, fh - 1))
+                lx *= sx
+                ly *= sy
+
+                lx = max(0.0, min(lx, fw - 1.0))
+                ly = max(0.0, min(ly, fh - 1.0))
 
                 circ = dmeta.circle_params[dmeta.num_circles]
                 circ.xc = int(round(lx))
                 circ.yc = int(round(ly))
-                circ.radius = int(0.5)
+                circ.radius = int(2)
                 circ.has_bg_color = 1
                 circ.bg_color.set(0.0, 1.0, 0.0, 1.0)
                 circ.circle_color.set(0.0, 1.0, 0.0, 1.0)

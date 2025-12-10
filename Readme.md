@@ -57,7 +57,7 @@ Before running the example, run the setup script once:
 You need a YuNet `nvinfer` config file, for example:
 
 ```text
-  /home/swish/yunet/yunet_nvinfer_config.txt
+  ./yunet_nvinfer_config.txt
 ```
 
 This config should:

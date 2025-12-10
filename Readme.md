@@ -5,7 +5,7 @@ This project is a **minimal YuNet-based face detector** built on **NVIDIA DeepSt
 - YuNet running as a DeepStream primary GIE (PGIE) via TensorRT.
 - **5 facial keypoints** decoded per face (eyes, nose, mouth corners).
 - End–to–end pipeline: **video → detection → OSD → MP4**.
-- Verified to reach **~72 FPS on Jetson Orin Nano** (YuNet + 5 kpts, 640×640).
+- Verified to reach **~120 FPS on Jetson Orin Nano** (YuNet + 5 kpts, 640×640).
 
 ---
 
@@ -50,16 +50,6 @@ Before running the example, run the setup script once:
 ```bash
 ./setup.sh
 ```
-
-Typical things `setup.sh` would handle (depending on how you implemented it):
-
-- Creating/activating a Python venv.
-- Installing required Python packages (e.g. `gi`, `numpy`).
-- Exporting `PYTHONPATH` or `LD_LIBRARY_PATH` so that `pyds` and GStreamer plugins are found.
-- Any DeepStream / YuNet engine build steps you need.
-
-> **Note:** Adjust `setup.sh` to your environment (Jetson vs PC, DeepStream version, etc.).
-
 ---
 
 ## YuNet nvinfer Config
@@ -132,10 +122,6 @@ After a successful run, the DeepStream + YuNet pipeline writes the annotated vid
 ```text
   out/yunet_ds_out.mp4
 ```
-
-If your README is viewed in an environment that allows HTML (e.g. many Git hosting UIs, static docs sites), you can embed the video directly:
-
-
 
 https://github.com/user-attachments/assets/a9617ac8-fe80-4dce-8188-41f6ed3821f8
 
